@@ -1,0 +1,24 @@
+name: Run df Command
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-df:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run df command
+        run: df -h
+      - name: Run lsblk command
+        run: lsblk
+      - name: Run lscpu command
+        run: lscpu
+  run-df-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Run df command
+        run: df -h
+      - name: Run lsblk command
+        run: lsblk
+      - name: Run lscpu command
+        run: lscpu          
