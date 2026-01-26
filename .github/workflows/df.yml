@@ -21,4 +21,9 @@ jobs:
       - name: Run lsblk command
         run: lsblk
       - name: Run lscpu command
-        run: lscpu          
+        run: lscpu
+  examine-disk-win:
+    runs-on: windows-latest
+    steps:
+      - name: check disks
+        run: wmic logicaldisk get name,freespace,size,filesystem,volumename
