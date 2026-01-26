@@ -28,8 +28,8 @@ jobs:
       - name: check disks
         shell: pwsh
         run: |
-          Get-CimInstance Win32_LogicalDisk |
-            Select-Object DeviceID, VolumeName, FileSystem,
-              @{n='SizeGB';f={[math]::Round($_.Size/1GB,2)}},
-              @{n='FreeGB';f={[math]::Round($_.FreeSpace/1GB,2)}} |
+          Get-CimInstance -ClassName Win32_LogicalDisk |
+            Select-Object -Property DeviceID, VolumeName, FileSystem,
+              @{Name='SizeGB';Expression={[math]::Round($_.Size/1GB,2)}},
+              @{Name='FreeGB';Expression={[math]::Round($_.FreeSpace/1GB,2)}} |
             Format-Table -AutoSize
