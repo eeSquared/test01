@@ -25,6 +25,9 @@ jobs:
   examine-disk-win:
     runs-on: windows-latest
     steps:
+      - name: pwd
+        shell: pwsh
+        run: pwd
       - name: check disks
         shell: pwsh
         run: |
