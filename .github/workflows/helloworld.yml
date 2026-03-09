@@ -5,7 +5,7 @@ on:
 
 jobs:
   hello-world:
-    runs-on: macos-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Print Hello World
         run: cat /opt/hca/provjobd.version
