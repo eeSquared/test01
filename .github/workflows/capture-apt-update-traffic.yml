@@ -83,7 +83,7 @@ jobs:
             exit 1
           fi
 
-          timeout --signal=TERM --kill-after=30s 10m \
+          timeout --signal=TERM --kill-after=30s 1=30m \
             sudo apt-get \
               -o Debug::pkgAcquire::Worker=true \
               -o Debug::Acquire::http=true \
