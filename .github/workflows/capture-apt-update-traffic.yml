@@ -18,6 +18,7 @@ jobs:
           mkdir -p "$CAPTURE_DIR"
           capture_file="$CAPTURE_DIR/apt-update.pcap"
           log_file="$CAPTURE_DIR/tcpdump.log"
+          apt_log_file="$CAPTURE_DIR/apt-debug.log"
           pid_file="$CAPTURE_DIR/tcpdump.pid"
 
           cleanup() {
@@ -82,7 +83,12 @@ jobs:
             exit 1
           fi
 
-          timeout --signal=TERM --kill-after=30s 10m sudo apt update
+          timeout --signal=TERM --kill-after=30s 10m \
+            sudo apt-get \
+              -o Debug::pkgAcquire::Worker=true \
+              -o Debug::Acquire::http=true \
+              -o Debug::Acquire::https=true \
+              update 2>&1 | tee "$apt_log_file"
 
       - name: Upload packet capture
         if: ${{ always() }}
@@ -91,5 +97,6 @@ jobs:
           name: apt-update-packet-capture
           path: |
             ${{ runner.temp }}/apt-update-capture/apt-update.pcap
+            ${{ runner.temp }}/apt-update-capture/apt-debug.log
             ${{ runner.temp }}/apt-update-capture/tcpdump.log
           if-no-files-found: error
