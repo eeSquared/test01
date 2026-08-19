@@ -82,7 +82,7 @@ jobs:
             exit 1
           fi
 
-          timeout --signal=TERM --kill-after=30s 10m sudo apt update
+          timeout --signal=TERM --kill-after=30s 10m sudo apt-get update
 
       - name: Upload packet capture
         if: ${{ always() }}
