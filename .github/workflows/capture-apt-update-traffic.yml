@@ -1,0 +1,96 @@
+name: Capture apt update traffic
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    env:
+      CAPTURE_DIR: ${{ runner.temp }}/apt-update-capture
+    steps:
+      - name: Capture traffic while updating apt metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$CAPTURE_DIR"
+          capture_file="$CAPTURE_DIR/apt-update.pcap"
+          log_file="$CAPTURE_DIR/tcpdump.log"
+          pid_file="$CAPTURE_DIR/tcpdump.pid"
+
+          cleanup() {
+            if [[ -s "$pid_file" ]]; then
+              capture_pid="$(<"$pid_file")"
+              if sudo kill -0 "$capture_pid" 2>/dev/null; then
+                sudo kill -INT "$capture_pid" 2>/dev/null || true
+
+                for _ in {1..20}; do
+                  if ! kill -0 "$launcher_pid" 2>/dev/null; then
+                    break
+                  fi
+                  sleep 0.5
+                done
+
+                if kill -0 "$launcher_pid" 2>/dev/null; then
+                  sudo kill -TERM "$capture_pid" 2>/dev/null || true
+
+                  for _ in {1..10}; do
+                    if ! kill -0 "$launcher_pid" 2>/dev/null; then
+                      break
+                    fi
+                    sleep 0.5
+                  done
+                fi
+
+                if kill -0 "$launcher_pid" 2>/dev/null; then
+                  sudo kill -KILL "$capture_pid" 2>/dev/null || true
+                fi
+              fi
+            fi
+
+            wait "$launcher_pid" 2>/dev/null || true
+            sudo chown "$(id -u):$(id -g)" "$capture_file" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          sudo bash -c \
+            'echo "$$" > "$1"; exec tcpdump -i any -U -w "$2"' \
+            tcpdump "$pid_file" "$capture_file" >"$log_file" 2>&1 &
+          launcher_pid=$!
+
+          capture_started=false
+          for _ in {1..20}; do
+            if [[ -s "$pid_file" ]]; then
+              capture_pid="$(<"$pid_file")"
+              if sudo kill -0 "$capture_pid" 2>/dev/null &&
+                [[ "$(sudo ps -p "$capture_pid" -o comm=)" == "tcpdump" ]]; then
+                capture_started=true
+                break
+              fi
+            fi
+
+            if ! kill -0 "$launcher_pid" 2>/dev/null; then
+              break
+            fi
+            sleep 0.5
+          done
+
+          if [[ "$capture_started" != true ]]; then
+            echo "tcpdump failed to start; see $log_file" >&2
+            exit 1
+          fi
+
+          timeout --signal=TERM --kill-after=30s 10m sudo apt update
+
+      - name: Upload packet capture
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: apt-update-packet-capture
+          path: |
+            ${{ env.CAPTURE_DIR }}/apt-update.pcap
+            ${{ env.CAPTURE_DIR }}/tcpdump.log
+          if-no-files-found: error
