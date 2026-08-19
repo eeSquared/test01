@@ -8,14 +8,13 @@ permissions: {}
 jobs:
   capture:
     runs-on: ubuntu-latest
-    env:
-      CAPTURE_DIR: ${{ runner.temp }}/apt-update-capture
     steps:
       - name: Capture traffic while updating apt metadata
         shell: bash
         run: |
           set -euo pipefail
 
+          CAPTURE_DIR="$RUNNER_TEMP/apt-update-capture"
           mkdir -p "$CAPTURE_DIR"
           capture_file="$CAPTURE_DIR/apt-update.pcap"
           log_file="$CAPTURE_DIR/tcpdump.log"
@@ -91,6 +90,6 @@ jobs:
         with:
           name: apt-update-packet-capture
           path: |
-            ${{ env.CAPTURE_DIR }}/apt-update.pcap
-            ${{ env.CAPTURE_DIR }}/tcpdump.log
+            ${{ runner.temp }}/apt-update-capture/apt-update.pcap
+            ${{ runner.temp }}/apt-update-capture/tcpdump.log
           if-no-files-found: error
